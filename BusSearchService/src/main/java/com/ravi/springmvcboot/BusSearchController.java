@@ -1,6 +1,11 @@
 package com.ravi.springmvcboot;
 
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.Iterator;
 import java.util.List;
+import java.util.Map;
+import java.util.Set;
 
 import org.json.JSONArray;
 //import org.json.simple.JSONObject;
@@ -25,11 +30,49 @@ public class BusSearchController {
 	BusSearchRepo repo;
 	
 
-	@GetMapping("bussearch")
-	public List<BusSearch> getFares() {
-		System.out.println("Inside getFares method");
-		List<BusSearch> buses = repo.findAll();
-		return buses;
+	@GetMapping(path = "bussearch", produces = MediaType.APPLICATION_JSON_VALUE)
+	public String getRoutes() {
+		System.out.println("Inside getRoutes method");
+		List<BusSearch> routes = repo.findAll();
+		
+		// ******* Creating JSON Array Only with From and To values *********
+		JSONArray routesList = new JSONArray();
+		for(BusSearch route:routes) {
+			JSONObject obj = new JSONObject();
+			obj.put("From", route.getFrom());
+			obj.put("To", route.getTo());
+			routesList.put(obj);
+		}	
+		
+		// ******* REMOVING DUPLICATES FROM THE JSON Array *************
+		JSONArray noDupRoutesList = new JSONArray();
+		HashMap<String, String> uniquelist = new HashMap<String, String>();
+		
+		for(int i=0; i< routesList.length() ;i++) {
+			String duplicate = "False";
+			JSONObject routesListobj = routesList.getJSONObject(i);
+			Set set = (Set) uniquelist.entrySet();
+			Iterator iterator = set.iterator();
+			while (iterator.hasNext()) {
+				Map.Entry mapEntry = (Map.Entry) iterator.next();
+				String key   = (String) mapEntry.getKey();
+				String value = (String) mapEntry.getValue();
+				if (key.equals(routesListobj.getString("From")) && value.equals(routesListobj.getString("To")))
+						duplicate = "True";
+			}
+			
+			if (duplicate == "False") {
+				uniquelist.put(routesListobj.getString("From"), routesListobj.getString("To"));
+				System.out.println(routesListobj.getString("From") + " - " +routesListobj.getString("To"));
+				noDupRoutesList.put(routesListobj);
+			}
+		}
+		
+		
+		//System.out.println(routesList.toString());
+		//System.out.println(noDupRoutesList.toString());
+		//return routesList.toString();
+		return noDupRoutesList.toString();
 	}
 	
 	@GetMapping(path = "bussearch/{from}/{to}", produces = MediaType.APPLICATION_JSON_VALUE)
